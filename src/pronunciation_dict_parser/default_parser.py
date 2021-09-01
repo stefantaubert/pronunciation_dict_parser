@@ -9,6 +9,7 @@ class PublicDictType(Enum):
   MFA_ARPA = 2
   MFA_EN_UK_IPA = 3
   MFA_EN_US_IPA = 4
+  PROSODYLAB_ARPA = 5
 
   def get_url(self) -> str:
     if self == PublicDictType.CMU_ARPA:
@@ -21,6 +22,8 @@ class PublicDictType(Enum):
       return "https://raw.githubusercontent.com/MontrealCorpusTools/mfa-models/main/dictionary/english_uk_ipa.dict"
     if self == PublicDictType.MFA_EN_US_IPA:
       return "https://raw.githubusercontent.com/MontrealCorpusTools/mfa-models/main/dictionary/english_us_ipa.dict"
+    if self == PublicDictType.PROSODYLAB_ARPA:
+      return "https://raw.githubusercontent.com/prosodylab/Prosodylab-Aligner/master/eng.dict"
     assert False
 
   def get_encoding(self) -> str:
@@ -33,6 +36,8 @@ class PublicDictType(Enum):
     if self == PublicDictType.MFA_EN_UK_IPA:
       return "UTF-8"
     if self == PublicDictType.MFA_EN_US_IPA:
+      return "UTF-8"
+    if self == PublicDictType.PROSODYLAB_ARPA:
       return "UTF-8"
 
     assert False
