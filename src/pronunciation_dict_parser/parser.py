@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 from typing import OrderedDict as OrderedDictType
 from typing import Set, Tuple
 from urllib.request import urlopen
