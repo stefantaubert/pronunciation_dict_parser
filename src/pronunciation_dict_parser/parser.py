@@ -5,12 +5,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.request import urlopen
 
+from ordered_set import OrderedSet
 from tqdm import tqdm
 
 Word = str
 Symbol = str
 Pronunciation = Tuple[Symbol]
-Pronunciations = List[Pronunciation]
+Pronunciations = OrderedSet[Pronunciation]
 PronunciationDict = Dict[Word, Pronunciations]
 
 alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
@@ -84,14 +85,14 @@ def _process_line(line: str, dictionary: PronunciationDict, line_nr: int) -> Non
   word_upper = word.upper()
 
   if word_upper not in dictionary:
-    dictionary[word_upper] = list()
+    dictionary[word_upper] = OrderedSet()
 
   already_contained = pronunciation_arpa in dictionary[word_upper]
   if already_contained:
     logger.warning(
       f"Line {line_nr}: For word \"{word}\" the same pronunciation \"{' '.join(list(pronunciation_arpa))}\" exists multiple times!")
   else:
-    dictionary[word_upper].append(pronunciation_arpa)
+    dictionary[word_upper].add(pronunciation_arpa)
 
 
 def _get_word_and_pronunciation(line: str) -> Tuple[Word, Pronunciation]:
@@ -132,13 +133,5 @@ def _line_should_be_processed(line: str, line_nr: int) -> bool:
     stripped_line = line.strip("\n")
     logger.info(f"Line {line_nr}: Ignoring comment -> \"{stripped_line}\"")
     return False
-
-  # first_char = line[0]
-  # assert first_char == first_char.upper()
-  # begins_with_special_char = first_char < 'A' or first_char > 'Z'
-  # begins_with_apostrophe = first_char == "'"
-
-  # if begins_with_special_char and not begins_with_apostrophe:
-  #   return False
 
   return True
