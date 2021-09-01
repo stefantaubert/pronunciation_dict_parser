@@ -1,8 +1,11 @@
 import logging
 import re
+from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional
+from typing import OrderedDict as OrderedDictType
+from typing import Set, Tuple
 from urllib.request import urlopen
 
 from ordered_set import OrderedSet
@@ -10,9 +13,9 @@ from tqdm import tqdm
 
 Word = str
 Symbol = str
-Pronunciation = Tuple[Symbol]
+Pronunciation = Tuple[Symbol, ...]
 Pronunciations = OrderedSet[Pronunciation]
-PronunciationDict = Dict[Word, Pronunciations]
+PronunciationDict = OrderedDictType[Word, Pronunciations]
 
 alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
 word_pronunciation_pattern = re.compile(r"([^\s]*)\s*(.*)")
@@ -66,7 +69,7 @@ def _read_lines(file: Path, encoding: Optional[str]) -> List[str]:
 
 
 def parse_lines(lines: List[str]) -> PronunciationDict:
-  result: PronunciationDict = dict()
+  result: PronunciationDict = OrderedDict()
   logger = getLogger(__name__)
   use_tqdm = logger.level <= logging.INFO
   data = tqdm(lines) if use_tqdm else lines
