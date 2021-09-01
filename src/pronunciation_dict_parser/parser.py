@@ -18,7 +18,7 @@ word_pronunciation_pattern = re.compile(r"([^\s]*)\s*(.*)")
 symbol_separator_pattern = re.compile(r"\s")
 
 
-def parse_url(url: str, encoding: str) -> PronunciationDict:
+def parse_url(url: str, encoding: str = "UTF-8") -> PronunciationDict:
   logger = getLogger(__name__)
   logger.info("Downloading dictionary content...")
   lines = _read_url_lines(url, encoding)
@@ -28,7 +28,7 @@ def parse_url(url: str, encoding: str) -> PronunciationDict:
   return resulting_dict
 
 
-def parse_file(path: Path, encoding: Optional[str] = None) -> PronunciationDict:
+def parse_file(path: Path, encoding: Optional[str] = "UTF-8") -> PronunciationDict:
   logger = getLogger(__name__)
   if path is None or not path.exists():
     raise Exception()

@@ -13,3 +13,10 @@ def parse_librispeech() -> PronunciationDict:
     url="https://www.openslr.org/resources/11/librispeech-lexicon.txt",
     encoding="UTF-8",
   )
+
+
+def parse_mfa() -> PronunciationDict:
+  return parse_url(
+    url="https://raw.githubusercontent.com/MontrealCorpusTools/mfa-models/main/dictionary/english.dict",
+    encoding="UTF-8",
+  )

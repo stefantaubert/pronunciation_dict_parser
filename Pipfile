@@ -13,6 +13,7 @@ pipenv-setup = "*"
 
 [packages]
 tqdm = "*"
+ordered-set = "*"
 
 [requires]
 python_version = "3.8"
