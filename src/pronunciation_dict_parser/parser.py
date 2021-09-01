@@ -25,6 +25,7 @@ def parse_url(url: str, encoding: str = "UTF-8") -> PronunciationDict:
   logger.info("Parsing content...")
   resulting_dict = parse_lines(lines)
   logger.info("Done.")
+  logger.info(f"Dictionary entries: {len(resulting_dict)}")
   return resulting_dict
 
 
@@ -37,6 +38,7 @@ def parse_file(path: Path, encoding: Optional[str] = "UTF-8") -> PronunciationDi
   logger.info("Parsing file...")
   resulting_dict = parse_lines(lines)
   logger.info("Done.")
+  logger.info(f"Dictionary entries: {len(resulting_dict)}")
   return resulting_dict
 
 
