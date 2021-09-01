@@ -127,7 +127,8 @@ def _line_should_be_processed(line: str, line_nr: int) -> bool:
 
   is_comment = line.startswith(";;;")
   if is_comment:
-    logger.info(f"Line {line_nr}: Ignoring comment -> {line.strip()}")
+    stripped_line = line.strip("\n")
+    logger.info(f"Line {line_nr}: Ignoring comment -> \"{stripped_line}\"")
     return False
 
   # first_char = line[0]
