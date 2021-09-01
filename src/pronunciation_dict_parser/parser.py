@@ -46,14 +46,14 @@ def parse_file(path: Path, encoding: Optional[str] = "UTF-8") -> PronunciationDi
   return resulting_dict
 
 
-def get_occurring_symbols(dictionary: PronunciationDict) -> Set[Symbol]:
+def get_occurring_symbols(dictionary: PronunciationDict) -> OrderedSet[Symbol]:
   assert isinstance(dictionary, dict)
-  all_symbols: Set[Symbol] = {
+  all_symbols: Set[Symbol] = OrderedSet(sorted({
     symbol
       for pronunciations in dictionary.values()
       for pronunciation in pronunciations
       for symbol in pronunciation
-  }
+  }))
   return all_symbols
 
 
