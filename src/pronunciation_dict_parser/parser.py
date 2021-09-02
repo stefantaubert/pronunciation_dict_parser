@@ -64,7 +64,7 @@ def _read_url_lines(url: str, encoding: str):
 
 
 def _read_lines(file: Path, encoding: Optional[str]) -> List[str]:
-  with file.open(encoding=encoding) as f:
+  with file.open(encoding=encoding, mode="r") as f:
     return f.readlines()
 
 
@@ -79,6 +79,11 @@ def parse_lines(lines: List[str]) -> PronunciationDict:
     if line_should_be_processed:
       _process_line(line, result, line_nr)
 
+  return result
+
+
+def sort_after_words(dictionary: PronunciationDict) -> PronunciationDict:
+  result = OrderedDict({k: dictionary[k] for k in sorted(dictionary.keys())})
   return result
 
 
