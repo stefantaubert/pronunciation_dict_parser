@@ -18,8 +18,8 @@ Pronunciations = OrderedSet[Pronunciation]
 PronunciationDict = OrderedDictType[Word, Pronunciations]
 
 alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
-word_pronunciation_pattern = re.compile(r"([^\s]*)\s*(.*)")
-symbol_separator_pattern = re.compile(r"\s")
+word_pronunciation_pattern = re.compile(r"([^\s]+)\s+(.+)")
+symbol_separator_pattern = re.compile(r"\s+")
 
 
 def parse_url(url: str, encoding: str = "UTF-8") -> PronunciationDict:
@@ -64,6 +64,7 @@ def _read_url_lines(url: str, encoding: str):
 
 
 def _read_lines(file: Path, encoding: Optional[str]) -> List[str]:
+  assert isinstance(file, Path)
   with file.open(encoding=encoding, mode="r") as f:
     return f.readlines()
 
@@ -74,7 +75,7 @@ def parse_lines(lines: List[str]) -> PronunciationDict:
   use_tqdm = logger.level <= logging.INFO
   data = tqdm(lines) if use_tqdm else lines
   for line_nr, line in enumerate(data, start=1):
-    line_should_be_processed = _line_should_be_processed(line, line_nr)
+    line_should_be_processed = __should_line_be_processed(line, line_nr)
 
     if line_should_be_processed:
       _process_line(line, result, line_nr)
@@ -89,7 +90,13 @@ def sort_after_words(dictionary: PronunciationDict) -> PronunciationDict:
 
 def _process_line(line: str, dictionary: PronunciationDict, line_nr: int) -> None:
   logger = getLogger(__name__)
-  word, pronunciation_arpa = _get_word_and_pronunciation(line)
+  splitting_result = __try_get_word_and_pronunciation(line)
+  if splitting_result is None:
+    logger = getLogger(__name__)
+    logger.warning(f"Line {line_nr}: Couldn't parse \"{line}\".")
+    return None
+
+  word, pronunciation_arpa = splitting_result
   word_upper = word.upper()
 
   if word_upper not in dictionary:
@@ -102,34 +109,38 @@ def _process_line(line: str, dictionary: PronunciationDict, line_nr: int) -> Non
   else:
     dictionary[word_upper].add(pronunciation_arpa)
 
+  return None
 
-def _get_word_and_pronunciation(line: str) -> Tuple[Word, Pronunciation]:
+
+def __try_get_word_and_pronunciation(line: str) -> Optional[Tuple[Word, Pronunciation]]:
   line = line.strip()
-  word_str, pronunciation_str = split_word_pronunciation(line)
-  word_str = _remove_double_indicators(word_str)
+  splitting_result = __try_split_word_pronunciation(line)
+  if splitting_result is None:
+    return None
+  word_str, pronunciation_str = splitting_result
+  word_str = __remove_double_indicators(word_str)
   pronunciation: Pronunciation = tuple(re.split(symbol_separator_pattern, pronunciation_str))
-
   return word_str, pronunciation
 
 
-def split_word_pronunciation(line: str) -> Tuple[Word, str]:
+def __try_split_word_pronunciation(line: str) -> Optional[Tuple[Word, str]]:
   res = re.match(word_pronunciation_pattern, line)
   if res is None:
-    raise Exception()
+    return None
 
   word = res.group(1)
   pronunciation_str = res.group(2)
   return word, pronunciation_str
 
 
-def _remove_double_indicators(word: Word) -> Word:
+def __remove_double_indicators(word: Word) -> Word:
   ''' example: ABBE(1) => ABBE '''
   result = re.sub(alternative_pronunciation_indicator_pattern, '', word)
 
   return result
 
 
-def _line_should_be_processed(line: str, line_nr: int) -> bool:
+def __should_line_be_processed(line: str, line_nr: int) -> bool:
   logger = getLogger(__name__)
   is_empty = len(line) == 0
   if is_empty:
@@ -139,7 +150,7 @@ def _line_should_be_processed(line: str, line_nr: int) -> bool:
   is_comment = line.startswith(";;;")
   if is_comment:
     stripped_line = line.strip("\n")
-    logger.info(f"Line {line_nr}: Ignoring comment -> \"{stripped_line}\"")
+    logger.info(f"Line {line_nr}: Ignoring comment -> \"{stripped_line}\".")
     return False
 
   return True
