@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional
 from pronunciation_dict_parser.parser import PronunciationDict
 
 
-def _write_text(file: Path, text: str, encoding: Optional[str]) -> None:
+def __write_text(file: Path, text: str, encoding: Optional[str]) -> None:
   assert isinstance(file, Path)
   with file.open(encoding=encoding, mode="w") as f:
     return f.write(text)
@@ -18,4 +18,4 @@ def export(path: Path, pronunciation_dict: PronunciationDict, word_pronunciation
       pron = symbol_sep.join(pronunciation)
       line = f"{word}{counter_str}{word_pronunciation_sep}{pron}\n"
       dict_content += line
-  _write_text(path, dict_content, encoding="UTF-8")
+  __write_text(path, dict_content, encoding="UTF-8")
