@@ -4,12 +4,14 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pronuciation_dict_parser = {editable = true, path = "."}
 autopep8 = "*"
 isort = "*"
 pycodestyle = "*"
 pylint = "*"
 rope = "*"
 pipenv-setup = "*"
+pytest = "*"
 
 [packages]
 tqdm = "*"
