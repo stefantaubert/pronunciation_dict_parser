@@ -73,12 +73,12 @@ def __dict_is_saved_in_tmp(dict_type: PublicDictType) -> bool:
 
 def __save_to_temp(pronunciations: PronunciationDict, dict_type: PublicDictType) -> None:
   path = __get_tmp_path(dict_type)
-  with open(path, mode="w") as file:
+  with open(path, mode="wb") as file:
     pickle.dump(pronunciations, file)
 
 
 def __load_from_temp(dict_type: PublicDictType) -> PronunciationDict:
   path = __get_tmp_path(dict_type)
   assert path.is_file()
-  with open(path, mode="r") as file:
+  with open(path, mode="rb") as file:
     return pickle.load(file)
