@@ -45,6 +45,22 @@ class PublicDictType(Enum):
 
     assert False
 
+  def __str__(self) -> str:
+    if self == PublicDictType.CMU_ARPA:
+      return "CMU (ARPA)"
+    if self == PublicDictType.LIBRISPEECH_ARPA:
+      return "LibriSpeech (ARPA)"
+    if self == PublicDictType.MFA_ARPA:
+      return "MFA (ARPA)"
+    if self == PublicDictType.MFA_EN_UK_IPA:
+      return "MFA en-UK (IPA)"
+    if self == PublicDictType.MFA_EN_US_IPA:
+      return "MFA en-US (IPA)"
+    if self == PublicDictType.PROSODYLAB_ARPA:
+      return "Prosodylab (ARPA)"
+
+    assert False
+
 
 def parse_public_dict(dict_type: PublicDictType) -> PronunciationDict:
   if __dict_is_saved_in_tmp(dict_type):
