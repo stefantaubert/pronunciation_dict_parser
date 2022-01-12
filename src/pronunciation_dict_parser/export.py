@@ -10,7 +10,7 @@ def __write_text(file: Path, text: str, encoding: Optional[str]) -> None:
     return f.write(text)
 
 
-def export(path: Path, pronunciation_dict: PronunciationDict, word_pronunciation_sep: str = "\t", symbol_sep: str = " ", include_counter: bool = True) -> None:
+def export(path: Path, pronunciation_dict: PronunciationDict, word_pronunciation_sep: str = "\t", symbol_sep: str = " ", include_counter: bool = True, encoding="UTF-8") -> None:
   dict_content = ""
   for word, pronunciations in pronunciation_dict.items():
     for counter, pronunciation in enumerate(pronunciations):
@@ -18,4 +18,4 @@ def export(path: Path, pronunciation_dict: PronunciationDict, word_pronunciation
       pron = symbol_sep.join(pronunciation)
       line = f"{word}{counter_str}{word_pronunciation_sep}{pron}\n"
       dict_content += line
-  __write_text(path, dict_content, encoding="UTF-8")
+  __write_text(path, dict_content, encoding=encoding)
