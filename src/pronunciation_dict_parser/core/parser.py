@@ -3,26 +3,21 @@ import re
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional
-from typing import OrderedDict as OrderedDictType
-from typing import Set, Tuple
+from typing import List, Optional, Set, Tuple
 from urllib.request import urlopen
 
 from ordered_set import OrderedSet
+from pronunciation_dict_parser.core.types import (Pronunciation,
+                                                  PronunciationDict, Symbol,
+                                                  Word)
 from tqdm import tqdm
-
-Word = str
-Symbol = str
-Pronunciation = Tuple[Symbol, ...]
-Pronunciations = OrderedSet[Pronunciation]
-PronunciationDict = OrderedDictType[Word, Pronunciations]
 
 alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
 word_pronunciation_pattern = re.compile(r"([^\s]+)\s+(.+)")
 symbol_separator_pattern = re.compile(r"\s+")
 
 
-def parse_url(url: str, encoding: str = "UTF-8") -> PronunciationDict:
+def parse_url(url: str, encoding: str) -> PronunciationDict:
   logger = getLogger(__name__)
   logger.info("Downloading dictionary content...")
   lines = _read_url_lines(url, encoding)
@@ -33,7 +28,7 @@ def parse_url(url: str, encoding: str = "UTF-8") -> PronunciationDict:
   return resulting_dict
 
 
-def parse_file(path: Path, encoding: Optional[str] = "UTF-8") -> PronunciationDict:
+def parse_dictionary_from_txt(path: Path, encoding: str, pronunciation_sep: str, symbol_sep: str, have_counter: bool, empty_symbol: Symbol) -> PronunciationDict:
   logger = getLogger(__name__)
   if path is None or not path.exists():
     raise Exception()
@@ -42,7 +37,7 @@ def parse_file(path: Path, encoding: Optional[str] = "UTF-8") -> PronunciationDi
   logger.info("Parsing file...")
   resulting_dict = parse_lines(lines)
   logger.info("Done.")
-  logger.info(f"Dictionary entries: {len(resulting_dict)}")
+  logger.info(f"# Dictionary entries: {len(resulting_dict)}")
   return resulting_dict
 
 
@@ -57,9 +52,9 @@ def get_occurring_symbols(dictionary: PronunciationDict) -> OrderedSet[Symbol]:
   return all_symbols
 
 
-def _read_url_lines(url: str, encoding: str):
-  url_content: List[bytes] = urlopen(url)
-  result = [line.decode(encoding) for line in url_content]
+def _read_url_lines(url: str, encoding: str) -> List[str]:
+  with urlopen(url) as url_content:
+    result = [line.decode(encoding) for line in url_content]
   return result
 
 

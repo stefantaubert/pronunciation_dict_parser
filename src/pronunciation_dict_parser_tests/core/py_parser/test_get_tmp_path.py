@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from pronunciation_dict_parser.default_parser import (PublicDictType,
-                                                      __get_tmp_path)
+from pronunciation_dict_parser.core.default_parser import (PublicDictType,
+                                                           __get_tmp_path)
 
 
 def test_get_tmp_path_cmu_arpa__returns_correct_path():

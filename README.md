@@ -18,3 +18,15 @@ pronunciations = parse_public_dict(PublicDictType.MFA_EN_US_IPA)
 
 symbols = get_occurring_symbols(pronunciations)
 ```
+
+## Methods
+
+- Download public dictionary
+- Format file
+- Replace symbols from words/pronunciations (removing is possible)
+- Print statistics
+  - Occurring symbols
+  - Words count
+- Remove alternative pronunciations
+- Get pronunciations for word
+- Merge dictionaries into one (all need to have the same format)
