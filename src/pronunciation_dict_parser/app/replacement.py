@@ -6,8 +6,9 @@ from tempfile import gettempdir
 from pronunciation_dict_parser.app.common import \
     add_default_output_formatting_arguments
 from pronunciation_dict_parser.app.helper import save_dictionary_as_txt
-from pronunciation_dict_parser.core.default_parser import PublicDictType
 from pronunciation_dict_parser.core.downloading import download
+from pronunciation_dict_parser.core.public_dicts import PublicDictType
+from pronunciation_dict_parser.core.types import Symbol
 
 
 def get_downloading_parser(parser: ArgumentParser):
@@ -23,7 +24,7 @@ def get_downloading_parser(parser: ArgumentParser):
   return app_download
 
 
-def app_download(path: Path, dictionary: PublicDictType, pronunciation_sep: str, symbol_sep: str, include_counter: bool, only_first_pronunciation: bool, encoding: str, overwrite: bool):
+def app_download(path: Path, dictionary: PublicDictType, pronunciation_sep: Symbol, symbol_sep: Symbol, include_counter: bool, only_first_pronunciation: bool, empty_symbol: Symbol, encoding: str, overwrite: bool):
   if not overwrite and path.exists():
     logger = getLogger(__name__)
     logger.error("File already exists!")
@@ -32,4 +33,4 @@ def app_download(path: Path, dictionary: PublicDictType, pronunciation_sep: str,
   pronunciation_dict = download(dictionary)
 
   save_dictionary_as_txt(pronunciation_dict, path, encoding, pronunciation_sep,
-                         symbol_sep, include_counter, only_first_pronunciation)
+                         symbol_sep, include_counter, only_first_pronunciation, empty_symbol)

@@ -1,4 +1,3 @@
-
 from typing import List, Optional
 
 from pronunciation_dict_parser.core.types import PronunciationDict, Symbol

@@ -28,7 +28,7 @@ def parse_url(url: str, encoding: str) -> PronunciationDict:
   return resulting_dict
 
 
-def parse_dictionary_from_txt(path: Path, encoding: str, pronunciation_sep: str, symbol_sep: str, have_counter: bool, empty_symbol: Symbol) -> PronunciationDict:
+def parse_dictionary_from_txt(path: Path, encoding: str, pronunciation_sep: str = None, symbol_sep: str = None, have_counter: bool = None, empty_symbol: Symbol = None) -> PronunciationDict:
   logger = getLogger(__name__)
   if path is None or not path.exists():
     raise Exception()

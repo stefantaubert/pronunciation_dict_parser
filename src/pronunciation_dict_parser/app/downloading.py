@@ -6,8 +6,8 @@ from tempfile import gettempdir
 from pronunciation_dict_parser.app.common import \
     add_default_output_formatting_arguments
 from pronunciation_dict_parser.app.helper import save_dictionary_as_txt
-from pronunciation_dict_parser.core.default_parser import PublicDictType
 from pronunciation_dict_parser.core.downloading import download
+from pronunciation_dict_parser.core.public_dicts import PublicDictType
 from pronunciation_dict_parser.core.types import Symbol
 
 
@@ -34,3 +34,6 @@ def app_download(path: Path, dictionary: PublicDictType, pronunciation_sep: Symb
 
   save_dictionary_as_txt(pronunciation_dict, path, encoding, pronunciation_sep,
                          symbol_sep, include_counter, only_first_pronunciation, empty_symbol)
+
+  logger = getLogger(__name__)
+  logger.info(f"Written dictionary to: {path}")

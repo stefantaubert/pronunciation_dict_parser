@@ -2,8 +2,11 @@ import pickle
 import tempfile
 from enum import Enum
 from pathlib import Path
+from typing import Type, TypeVar
 
-from pronunciation_dict_parser.parser import PronunciationDict, parse_url
+from pronunciation_dict_parser.core.parser import PronunciationDict, parse_url
+
+_T = TypeVar("_T")
 
 
 class PublicDictType(Enum):
@@ -45,7 +48,7 @@ class PublicDictType(Enum):
 
     assert False
 
-  def __str__(self) -> str:
+  def __repr__(self) -> str:
     if self == PublicDictType.CMU_ARPA:
       return "CMU (ARPA)"
     if self == PublicDictType.LIBRISPEECH_ARPA:
@@ -60,6 +63,42 @@ class PublicDictType(Enum):
       return "Prosodylab (ARPA)"
 
     assert False
+
+  def __str__(self) -> str:
+    if self == PublicDictType.CMU_ARPA:
+      return "CMU"
+    if self == PublicDictType.LIBRISPEECH_ARPA:
+      return "LibriSpeech"
+    if self == PublicDictType.MFA_ARPA:
+      return "MFA"
+    if self == PublicDictType.MFA_EN_UK_IPA:
+      return "MFA_en-UK"
+    if self == PublicDictType.MFA_EN_US_IPA:
+      return "MFA_en-US"
+    if self == PublicDictType.PROSODYLAB_ARPA:
+      return "Prosodylab"
+
+    assert False
+
+  def __getitem__(self: Type[_T], name: str) -> _T:
+    return get_dict_from_name(name)
+
+
+def get_dict_from_name(name: str) -> PublicDictType:
+  if name == "CMU":
+    return PublicDictType.CMU_ARPA
+  if name == "LibriSpeech":
+    return PublicDictType.LIBRISPEECH_ARPA
+  if name == "MFA":
+    return PublicDictType.MFA_ARPA
+  if name == "MFA_en-UK":
+    return PublicDictType.MFA_EN_UK_IPA
+  if name == "MFA_en-US":
+    return PublicDictType.MFA_EN_US_IPA
+  if name == "Prosodylab":
+    return PublicDictType.PROSODYLAB_ARPA
+
+  assert False
 
 
 def parse_public_dict(dict_type: PublicDictType) -> PronunciationDict:

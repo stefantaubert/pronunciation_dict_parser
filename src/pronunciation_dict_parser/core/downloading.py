@@ -1,7 +1,7 @@
 from logging import getLogger
 
-from pronunciation_dict_parser.core.default_parser import (PublicDictType,
-                                                           parse_public_dict)
+from pronunciation_dict_parser.core.public_dicts import (PublicDictType,
+                                                         parse_public_dict)
 from pronunciation_dict_parser.core.types import PronunciationDict
 
 

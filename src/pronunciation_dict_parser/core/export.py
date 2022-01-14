@@ -7,7 +7,7 @@ def to_text(pronunciation_dict: PronunciationDict, word_pronunciation_sep: Symbo
   dict_content = ""
   for word, pronunciations in pronunciation_dict.items():
     for counter, pronunciation in enumerate(pronunciations):
-      if len(pronunciation) == 0:
+      if len(pronunciation) == 0 and len(empty_symbol) > 0:
         pronunciation = tuple(empty_symbol)
       counter_str = f"({counter})" if include_counter and counter > 0 else ""
       pron = symbol_sep.join(pronunciation)

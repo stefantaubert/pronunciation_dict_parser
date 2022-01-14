@@ -1,4 +1,3 @@
-from logging import getLogger
 from pathlib import Path
 
 from pronunciation_dict_parser.core.export import to_text
@@ -16,5 +15,3 @@ def save_dictionary_as_txt(pronunciation_dict: PronunciationDict, path: Path, en
   dict_content = to_text(pronunciation_dict, word_pronunciation_sep,
                          symbol_sep, include_counter, only_first_pronunciation, empty_symbol)
   write_text(path, dict_content, encoding)
-  logger = getLogger(__name__)
-  logger.info(f"Written dictionary to: {path}")
