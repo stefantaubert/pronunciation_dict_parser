@@ -3,7 +3,6 @@ from pronunciation_dict_parser.core.types import Symbol
 
 
 def to_text(pronunciation_dict: PronunciationDict, word_pronunciation_sep: Symbol, symbol_sep: Symbol, include_counter: bool, only_first_pronunciation: bool, empty_symbol: Symbol) -> None:
-  assert len(empty_symbol) > 0
   dict_content = ""
   for word, pronunciations in pronunciation_dict.items():
     for counter, pronunciation in enumerate(pronunciations):
