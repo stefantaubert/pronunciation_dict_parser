@@ -7,10 +7,10 @@ from typing import List, Optional, Set, Tuple
 from urllib.request import urlopen
 
 from ordered_set import OrderedSet
-from pronunciation_dict_parser.core.types import (Pronunciation,
-                                                  PronunciationDict, Symbol,
-                                                  Word)
 from tqdm import tqdm
+
+from pronunciation_dict_parser.types import (Pronunciation, PronunciationDict,
+                                             Symbol, Word)
 
 alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
 word_pronunciation_pattern = re.compile(r"([^\s]+)\s+(.+)")

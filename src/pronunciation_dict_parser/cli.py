@@ -4,9 +4,6 @@ from argparse import ArgumentParser
 from logging import INFO, getLogger
 from typing import Callable, Dict, Generator, Tuple
 
-from pronunciation_dict_parser.app.downloading import get_downloading_parser
-from pronunciation_dict_parser.app.formatting import get_formatting_parser
-
 __version__ = "0.0.1"
 
 INVOKE_HANDLER_VAR = "invoke_handler"
@@ -25,8 +22,7 @@ def _init_parser():
   main_parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
   subparsers = main_parser.add_subparsers(help="description")
   methods = (
-    ("download", "download a public pronunciation dictionary", get_downloading_parser),
-    ("format", "format an existing pronunciation dictionary", get_formatting_parser),
+    ("download", "download a public pronunciation dictionary", None),
   )
 
   for command, description, method in methods:
