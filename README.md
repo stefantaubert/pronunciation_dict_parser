@@ -1,5 +1,18 @@
 # pronunciation_dict_parser
 
+## Features
+
+### Parsing
+
+- Parsing a dictionary from an URL or File
+- Ignore line comments in style `;;; {comment}`
+- Ignore pronunciation comments in style `{word} {pronunciation} # {comment}`
+- Ignore duplicate pronunciations for the same word
+- Ignore empty and invalid lines
+- Support for all whitespace separated pronunciations, e.g., `\t`, `␣`, `␣␣` between word and pronunciation, and between symbols in a pronunciation.
+- Support for multiprocessing
+
+
 ## Usage
 
 ```py
@@ -9,24 +22,4 @@ from pronunciation_dict_parser import parse_public_dict, PublicDictType, get_occ
 # adjust log level (optional)
 logging.basicConfig()
 logging.getLogger("pronunciation_dict_parser.parser").setLevel(logging.INFO)
-
-pronunciations = parse_public_dict(PublicDictType.CMU_ARPA)
-pronunciations = parse_public_dict(PublicDictType.LIBRISPEECH_ARPA)
-pronunciations = parse_public_dict(PublicDictType.MFA_ARPA)
-pronunciations = parse_public_dict(PublicDictType.MFA_EN_UK_IPA)
-pronunciations = parse_public_dict(PublicDictType.MFA_EN_US_IPA)
-
-symbols = get_occurring_symbols(pronunciations)
 ```
-
-## Methods
-
-- Download public dictionary
-- Format file
-- Replace symbols from words/pronunciations (removing is possible)
-- Print statistics
-  - Occurring symbols
-  - Words count
-- Remove alternative pronunciations
-- Get pronunciations for word
-- Merge dictionaries into one (all need to have the same format)

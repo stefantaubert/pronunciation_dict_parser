@@ -2,7 +2,7 @@ import argparse
 import logging
 from argparse import ArgumentParser
 from logging import INFO, getLogger
-from typing import Callable, Dict, Generator, Tuple
+from typing import Callable, Dict, Generator, List, Tuple
 
 __version__ = "0.0.1"
 
@@ -35,17 +35,41 @@ def _init_parser():
   return main_parser
 
 
-def main():
+def configure_logger() -> None:
+  loglevel = logging.DEBUG if __debug__ else logging.INFO
+  main_logger = getLogger()
+  main_logger.setLevel(loglevel)
+  main_logger.manager.disable = logging.NOTSET
+  if len(main_logger.handlers) > 0:
+    console = main_logger.handlers[0]
+  else:
+    console = logging.StreamHandler()
+    main_logger.addHandler(console)
+
+  logging_formatter = logging.Formatter(
+    '[%(asctime)s.%(msecs)03d] (%(levelname)s) %(message)s',
+    '%Y/%m/%d %H:%M:%S',
+  )
+  console.setFormatter(logging_formatter)
+  console.setLevel(loglevel)
+
+
+def parse_args(args: List[str]):
+  configure_logger()
+  logger = getLogger(__name__)
+  logger.debug("Received args:")
+  logger.debug(args)
   parser = _init_parser()
-  received_args = parser.parse_args()
+  received_args = parser.parse_args(args)
   params = vars(received_args)
 
   if INVOKE_HANDLER_VAR in params:
-    invoke_handler: Callable = params.pop(INVOKE_HANDLER_VAR)
+    invoke_handler: Callable[[ArgumentParser], None] = params.pop(INVOKE_HANDLER_VAR)
     invoke_handler(**params)
   else:
     parser.print_help()
 
 
 if __name__ == "__main__":
-  main()
+  arguments = sys.argv[1:]
+  parse_args(arguments)
