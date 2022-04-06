@@ -1,10 +1,9 @@
 from typing import OrderedDict as OrderedDictType
 from typing import Tuple
 
-from ordered_set import OrderedSet
-
 Word = str
 Symbol = str
+Weight = float
 Pronunciation = Tuple[Symbol, ...]
-Pronunciations = OrderedSet[Pronunciation]
+Pronunciations = OrderedDictType[Pronunciation, Weight]
 PronunciationDict = OrderedDictType[Word, Pronunciations]

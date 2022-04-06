@@ -9,9 +9,10 @@
 - Ignore pronunciation comments in style `{word} {pronunciation} # {comment}`
 - Ignore duplicate pronunciations for the same word
 - Ignore empty and invalid lines
+- Support for weights in style `{word} {weight} {pronunciation}`
+- Ignore pronunciations with a weight of zero
 - Support for all whitespace separated pronunciations, e.g., `\t`, `␣`, `␣␣` between word and pronunciation, and between symbols in a pronunciation.
 - Support for multiprocessing
-
 
 ## Usage
 

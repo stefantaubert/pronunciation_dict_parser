@@ -1,151 +1,174 @@
-import logging
 import re
 from collections import OrderedDict
+from dataclasses import dataclass
+from functools import partial
 from logging import getLogger
-from pathlib import Path
-from typing import List, Optional, Set, Tuple
-from urllib.request import urlopen
+from multiprocessing.pool import Pool
+from typing import List, Optional, Tuple
 
-from ordered_set import OrderedSet
 from tqdm import tqdm
 
 from pronunciation_dict_parser.types import (Pronunciation, PronunciationDict,
-                                             Symbol, Word)
+                                             Weight, Word)
 
-alternative_pronunciation_indicator_pattern = re.compile(r"\([0-9]+\)")
-word_pronunciation_pattern = re.compile(r"([^\s]+)\s+(.+)")
-symbol_separator_pattern = re.compile(r"\s+")
+WORD_PRON_PATTERN = re.compile(r"(\S+)\s+(.+)")
+WORD_WEIGHT_PRON_PATTERN = re.compile(r"(\S+)\s+([0-9\.]+)\s+(.+)")
+
+# e.g. `ABBE(1)`
+WORD_ALT_PATTERN = re.compile(r"(\S+)\([0-9]+\)")
+PRON_COMMENT_PATTERN = re.compile(r"(.*\S+)\s+(#.*)")
+PRON_SYMB_SEP_PATTERN = re.compile(r"\s+")
+DEFAULT_WEIGHT: Weight = 1.0
 
 
-def parse_url(url: str, encoding: str) -> PronunciationDict:
+@dataclass()
+class LineParsingOptions():
+  consider_comments: bool
+  consider_word_nrs: bool
+  consider_pronunciation_comments: bool
+  consider_weights: bool
+
+
+@dataclass()
+class MultiprocessingOptions():
+  n_jobs: int
+  maxtasksperchild: Optional[int]
+  chunksize: int
+
+
+def parse_lines(lines: List[str], options: LineParsingOptions, mp_options: MultiprocessingOptions) -> PronunciationDict:
+  assert isinstance(lines, list)
+  assert isinstance(options.consider_comments, bool)
+  assert isinstance(options.consider_pronunciation_comments, bool)
+  assert isinstance(options.consider_weights, bool)
+  assert isinstance(options.consider_word_nrs, bool)
+  assert isinstance(mp_options.chunksize, int)
+  assert mp_options.chunksize > 0
+  assert mp_options.maxtasksperchild is None or (isinstance(mp_options.maxtasksperchild,
+                                                            int) and mp_options.maxtasksperchild > 0)
+  assert isinstance(mp_options.n_jobs, int)
+  assert mp_options.n_jobs > 0
+
   logger = getLogger(__name__)
-  logger.info("Downloading dictionary content...")
-  lines = _read_url_lines(url, encoding)
-  logger.info("Parsing content...")
-  resulting_dict = parse_lines(lines)
-  logger.info("Done.")
-  logger.info(f"Dictionary entries: {len(resulting_dict)}")
-  return resulting_dict
+  pronunciation_dict: PronunciationDict = OrderedDict()
+
+  if len(lines) == 0:
+    return pronunciation_dict
+
+  process_method = partial(
+    process_get_pronunciation,
+    options=options,
+  )
+
+  with Pool(
+    processes=mp_options.n_jobs,
+    initializer=__init_pool_prepare_cache_mp,
+    initargs=(lines,),
+    maxtasksperchild=mp_options.maxtasksperchild,
+  ) as pool:
+    entries = range(len(lines))
+    iterator = pool.imap(process_method, entries, mp_options.chunksize)
+    result = dict(tqdm(iterator, total=len(entries), unit="lines"))
+
+  for line_i in range(len(lines)):
+    line_nr = line_i + 1
+    assert line_i in result
+    values, message = result[line_i]
+    if message is not None:
+      logger.info(f"Line {line_nr}: {message}")
+    if values is None:
+      continue
+    word, weight, pronunciation = values
+    had_weight = weight is not None
+
+    if weight is None:
+      weight = DEFAULT_WEIGHT
+
+    if had_weight and weight == 0:
+      logger.info(
+        f"Line {line_nr}: Ignored line because to word \"{word}\" the pronunciation \"{' '.join(pronunciation)}\" had zero weight.")
+    if word in pronunciation_dict:
+      if pronunciation in pronunciation_dict[word]:
+        if had_weight:
+          existing_weight = pronunciation_dict[word]
+          if weight != existing_weight:
+            logger.warning(
+              f"Line {line_nr}: Ignored line because to word \"{word}\" the pronunciation \"{' '.join(pronunciation)}\" was already assigned previously but with another weight ({existing_weight} vs. {weight})!.")
+          else:
+            logger.info(
+              f"Line {line_nr}: Ignored line because to word \"{word}\" the pronunciation \"{' '.join(pronunciation)}\" was already assigned previously (with same weight of {weight}).")
+        else:
+          logger.info(
+            f"Line {line_nr}: Ignored line because to word \"{word}\" the pronunciation \"{' '.join(pronunciation)}\" was already assigned previously.")
+        continue
+      pronunciation_dict[word][pronunciation] = weight
+    else:
+      pronunciation_dict[word] = OrderedDict(((pronunciation, weight),))
+
+  return pronunciation_dict
 
 
-def parse_dictionary_from_txt(path: Path, encoding: str) -> PronunciationDict:
-  logger = getLogger(__name__)
-  if path is None or not path.exists():
-    raise Exception()
-  logger.info("Loading dictionary file...")
-  lines = _read_lines(path, encoding)
-  logger.info("Parsing file...")
-  resulting_dict = parse_lines(lines)
-  logger.info("Done.")
-  logger.info(f"# Dictionary entries: {len(resulting_dict)}")
-  return resulting_dict
+process_lines: List[str] = None
 
 
-def get_occurring_symbols(dictionary: PronunciationDict) -> OrderedSet[Symbol]:
-  assert isinstance(dictionary, dict)
-  all_symbols: Set[Symbol] = OrderedSet(sorted({
-    symbol
-      for pronunciations in dictionary.values()
-      for pronunciation in pronunciations
-      for symbol in pronunciation
-  }))
-  return all_symbols
+def __init_pool_prepare_cache_mp(lines: List[str]) -> None:
+  global process_lines
+  process_lines = lines
 
 
-def _read_url_lines(url: str, encoding: str) -> List[str]:
-  with urlopen(url) as url_content:
-    result = [line.decode(encoding) for line in url_content]
-  return result
+def process_get_pronunciation(line_i: int, options: LineParsingOptions) -> Tuple[int, Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], Optional[str]]]]:
+  global process_lines
+  assert 0 <= line_i < len(process_lines)
+  line = process_lines[line_i]
+  return line_i, parse_line(line, options)
 
 
-def _read_lines(file: Path, encoding: Optional[str]) -> List[str]:
-  assert isinstance(file, Path)
-  with file.open(encoding=encoding, mode="r") as f:
-    return f.readlines()
-
-
-def parse_lines(lines: List[str]) -> PronunciationDict:
-  result: PronunciationDict = OrderedDict()
-  logger = getLogger(__name__)
-  use_tqdm = logger.level <= logging.INFO
-  data = tqdm(lines) if use_tqdm else lines
-  for line_nr, line in enumerate(data, start=1):
-    line_should_be_processed = __should_line_be_processed(line, line_nr)
-
-    if line_should_be_processed:
-      _process_line(line, result, line_nr)
-
-  return result
-
-
-def sort_after_words(dictionary: PronunciationDict) -> PronunciationDict:
-  result = OrderedDict({k: dictionary[k] for k in sorted(dictionary.keys())})
-  return result
-
-
-def _process_line(line: str, dictionary: PronunciationDict, line_nr: int) -> None:
-  logger = getLogger(__name__)
-  splitting_result = __try_get_word_and_pronunciation(line)
-  if splitting_result is None:
-    logger = getLogger(__name__)
-    logger.warning(f"Line {line_nr}: Couldn't parse \"{line}\".")
-    return None
-
-  word, pronunciation_arpa = splitting_result
-  word_upper = word.upper()
-
-  if word_upper not in dictionary:
-    dictionary[word_upper] = OrderedSet()
-
-  already_contained = pronunciation_arpa in dictionary[word_upper]
-  if already_contained:
-    logger.warning(
-      f"Line {line_nr}: For word \"{word}\" the same pronunciation \"{' '.join(list(pronunciation_arpa))}\" exists multiple times!")
-  else:
-    dictionary[word_upper].add(pronunciation_arpa)
-
-  return None
-
-
-def __try_get_word_and_pronunciation(line: str) -> Optional[Tuple[Word, Pronunciation]]:
+def parse_line(line: str, options: LineParsingOptions) -> Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], Optional[str]]]:
   line = line.strip()
-  splitting_result = __try_split_word_pronunciation(line)
-  if splitting_result is None:
-    return None
-  word_str, pronunciation_str = splitting_result
-  word_str = __remove_double_indicators(word_str)
-  pronunciation: Pronunciation = tuple(re.split(symbol_separator_pattern, pronunciation_str))
-  return word_str, pronunciation
+  line_is_empty = line == ""
+  if line_is_empty:
+    return None, "Ignored empty line."
 
+  if options.consider_comments:
+    is_comment = line.startswith(";;;")
+    if is_comment:
+      return None, f"Ignored comment -> \"{line}\""
 
-def __try_split_word_pronunciation(line: str) -> Optional[Tuple[Word, str]]:
-  res = re.match(word_pronunciation_pattern, line)
-  if res is None:
-    return None
+  if options.consider_weights:
+    word_weight_pronun_match = re.fullmatch(WORD_WEIGHT_PRON_PATTERN, line)
+    is_invalid_line = word_weight_pronun_match is None
+    if is_invalid_line:
+      return None, f"Ignored invalid line -> \"{line}\""
+    word = word_weight_pronun_match.group(1)
+    weight = word_weight_pronun_match.group(2)
+    pronunciation = word_weight_pronun_match.group(3)
+    try:
+      weight = float(weight)
+    except ValueError as error:
+      return None, f"Weight couldn't be parsed -> \"{weight}\""
+  else:
+    word_pronun_match = re.fullmatch(WORD_PRON_PATTERN, line)
+    is_invalid_line = word_pronun_match is None
+    if is_invalid_line:
+      return None, f"Ignored invalid line -> \"{line}\""
+    word = word_pronun_match.group(1)
+    weight = None
+    pronunciation = word_pronun_match.group(2)
 
-  word = res.group(1)
-  pronunciation_str = res.group(2)
-  return word, pronunciation_str
+  if options.consider_word_nrs:
+    word_nr_match = re.fullmatch(WORD_ALT_PATTERN, word)
+    has_word_nr = word_nr_match is not None
+    if has_word_nr:
+      word = word_nr_match.group(1)
 
+  msg = None
+  if options.consider_pronunciation_comments:
+    comment_match = re.fullmatch(PRON_COMMENT_PATTERN, pronunciation)
+    has_comment = comment_match is not None
+    if has_comment:
+      pronunciation = comment_match.group(1)
+      msg = f"Got comment for word \"{word}\" and pronunciation \"{pronunciation}\" -> \"{comment_match.group(2)}\""
 
-def __remove_double_indicators(word: Word) -> Word:
-  ''' example: ABBE(1) => ABBE '''
-  result = re.sub(alternative_pronunciation_indicator_pattern, '', word)
-
-  return result
-
-
-def __should_line_be_processed(line: str, line_nr: int) -> bool:
-  logger = getLogger(__name__)
-  is_empty = len(line) == 0
-  if is_empty:
-    logger.info(f"Line {line_nr}: Ignoring empty line.")
-    return False
-
-  is_comment = line.startswith(";;;")
-  if is_comment:
-    stripped_line = line.strip("\n")
-    logger.info(f"Line {line_nr}: Ignoring comment -> \"{stripped_line}\".")
-    return False
-
-  return True
+  symbols = re.split(PRON_SYMB_SEP_PATTERN, pronunciation)
+  pronunciation = tuple(symbols)
+  return (word, weight, pronunciation), msg
