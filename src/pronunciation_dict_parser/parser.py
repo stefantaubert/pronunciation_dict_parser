@@ -15,7 +15,7 @@ WORD_PRON_PATTERN = re.compile(r"(\S+)\s+(.+)")
 WORD_WEIGHT_PRON_PATTERN = re.compile(r"(\S+)\s+([0-9\.]+)\s+(.+)")
 
 # e.g. `ABBE(1)`
-WORD_ALT_PATTERN = re.compile(r"(\S+)\([0-9]+\)")
+WORD_ALT_PATTERN = re.compile(r"(\S+)(\([0-9]+\))")
 PRON_COMMENT_PATTERN = re.compile(r"(.*\S+)\s+(#.*)")
 PRON_SYMB_SEP_PATTERN = re.compile(r"\s+")
 DEFAULT_WEIGHT: Weight = 1.0
@@ -73,8 +73,8 @@ def parse_lines(lines: List[str], options: LineParsingOptions, mp_options: Multi
   for line_i in range(len(lines)):
     line_nr = line_i + 1
     assert line_i in result
-    values, message = result[line_i]
-    if message is not None:
+    values, messages = result[line_i]
+    for message in messages:
       logger.info(f"Line {line_nr}: {message}")
     if values is None:
       continue
@@ -116,59 +116,62 @@ def __init_pool_prepare_cache_mp(lines: List[str]) -> None:
   process_lines = lines
 
 
-def process_get_pronunciation(line_i: int, options: LineParsingOptions) -> Tuple[int, Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], Optional[str]]]]:
+def process_get_pronunciation(line_i: int, options: LineParsingOptions) -> Tuple[int, Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], List[str]]]]:
   global process_lines
   assert 0 <= line_i < len(process_lines)
   line = process_lines[line_i]
   return line_i, parse_line(line, options)
 
 
-def parse_line(line: str, options: LineParsingOptions) -> Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], Optional[str]]]:
+def parse_line(line: str, options: LineParsingOptions) -> Optional[Tuple[Tuple[Word, Optional[Weight], Pronunciation], List[str]]]:
   line = line.strip()
   line_is_empty = line == ""
   if line_is_empty:
-    return None, "Ignored empty line."
+    return None, ["Ignored empty line."]
 
   if options.consider_comments:
     is_comment = line.startswith(";;;")
     if is_comment:
-      return None, f"Ignored comment -> \"{line}\""
+      return None, [f"Ignored comment -> \"{line}\""]
 
   if options.consider_weights:
     word_weight_pronun_match = re.fullmatch(WORD_WEIGHT_PRON_PATTERN, line)
     is_invalid_line = word_weight_pronun_match is None
     if is_invalid_line:
-      return None, f"Ignored invalid line -> \"{line}\""
+      return None, [f"Ignored invalid line -> \"{line}\""]
     word = word_weight_pronun_match.group(1)
     weight = word_weight_pronun_match.group(2)
     pronunciation = word_weight_pronun_match.group(3)
     try:
       weight = float(weight)
     except ValueError as error:
-      return None, f"Weight couldn't be parsed -> \"{weight}\""
+      return None, [f"Weight couldn't be parsed -> \"{weight}\""]
   else:
     word_pronun_match = re.fullmatch(WORD_PRON_PATTERN, line)
     is_invalid_line = word_pronun_match is None
     if is_invalid_line:
-      return None, f"Ignored invalid line -> \"{line}\""
+      return None, [f"Ignored invalid line -> \"{line}\""]
     word = word_pronun_match.group(1)
     weight = None
     pronunciation = word_pronun_match.group(2)
+
+  msgs = []
 
   if options.consider_word_nrs:
     word_nr_match = re.fullmatch(WORD_ALT_PATTERN, word)
     has_word_nr = word_nr_match is not None
     if has_word_nr:
       word = word_nr_match.group(1)
+      msgs.append(f"Got alternate pronunciation \"{word_nr_match.group(2)}\" for word \"{word}\"")
 
-  msg = None
   if options.consider_pronunciation_comments:
     comment_match = re.fullmatch(PRON_COMMENT_PATTERN, pronunciation)
     has_comment = comment_match is not None
     if has_comment:
       pronunciation = comment_match.group(1)
-      msg = f"Got comment for word \"{word}\" and pronunciation \"{pronunciation}\" -> \"{comment_match.group(2)}\""
+      msgs.append(
+        f"Got comment for word \"{word}\" and pronunciation \"{pronunciation}\" -> \"{comment_match.group(2)}\"")
 
   symbols = re.split(PRON_SYMB_SEP_PATTERN, pronunciation)
   pronunciation = tuple(symbols)
-  return (word, weight, pronunciation), msg
+  return (word, weight, pronunciation), msgs
