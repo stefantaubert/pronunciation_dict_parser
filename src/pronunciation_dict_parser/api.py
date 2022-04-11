@@ -11,7 +11,7 @@ from pronunciation_dict_parser.parser import (LineParsingOptions,
                                               MultiprocessingOptions,
                                               parse_lines)
 from pronunciation_dict_parser.types import (Pronunciation, PronunciationDict,
-                                             Symbol, Word)
+                                             Pronunciations, Symbol, Word)
 
 DEFAULT_OPTS = LineParsingOptions(True, True, True, False)
 DEFAULT_MP_OPTS = MultiprocessingOptions(cpu_count(), None, 100000)
@@ -128,10 +128,16 @@ def get_phoneme_set(dictionary: PronunciationDict) -> OrderedSet[Symbol]:
   return unique_symbols
 
 
-def convert_weights_to_probabilities(dictionary: PronunciationDict) -> None:
+def convert_weights_to_probabilities_dict(dictionary: PronunciationDict) -> None:
   for pronunciations in dictionary.values():
-    sum_probs = sum(pronunciations.values())
-    for pronunciation, prob in pronunciations.items():
-      normed_prob = prob / sum_probs
-      if prob != normed_prob:
-        pronunciations[pronunciation] = normed_prob
+    convert_weights_to_probabilities(pronunciations)
+
+
+def convert_weights_to_probabilities(pronunciations: Pronunciations) -> None:
+  if not isinstance(pronunciations, OrderedDict):
+    raise ValueError("Parameter 'pronunciations' is invalid!")
+  sum_probs = sum(pronunciations.values())
+  for pronunciation, prob in pronunciations.items():
+    normed_prob = prob / sum_probs
+    if prob != normed_prob:
+      pronunciations[pronunciation] = normed_prob
